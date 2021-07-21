@@ -8,6 +8,7 @@ import { useStore } from 'react-redux';
 import Checkbox from './Sections/CheckBox';
 import Radiobox from './Sections/RadioBox';
 import { continents, price } from './Sections/Datas';
+import SearchFeature from './Sections/SearchFeature';
 
 function LandingPage() {
 
@@ -19,6 +20,7 @@ function LandingPage() {
         continents:[],
         price: []
     })
+    const [SearchTerm, setSearchTerm] = useState("")
 
 
     useEffect(() => {
@@ -99,6 +101,18 @@ function LandingPage() {
 
     }
 
+    const handlePrice = (value) => {
+        const data = price;
+        let array = [];
+
+        for (let key in data){
+
+            if(data[key]._id === parseInt(value._id, 10)){
+                array = data[key].array;
+            }
+        }
+    }
+
     const handleFilters = (filters, category) => {
 
         const newFilters = {...Filters}
@@ -106,6 +120,29 @@ function LandingPage() {
         newFilters[category] = filters
 
         showFilteredResults()
+
+        if(category === "price") {
+            let priceValues = handlePrice(filters)
+            newFilters[category] = priceValues
+        }
+
+        showFilteredResults(newFilters)
+        setFilters()
+    }
+
+    const updateSearchTerm = (newSearchTerm) => {
+       
+        let body={
+            skip: 0,
+            limit: Limit,
+            filters: Filters,
+            searchTerm: newSearchTerm
+        }
+        
+        setSkip(0)
+        setSearchTerm(newSearchTerm)
+        getProducts(body)
+
     }
 
     return (
@@ -131,6 +168,13 @@ function LandingPage() {
 
 
             {/* serach */}
+            <div style={{ display: 'flex', justifyContent:'flex-end', margin: '1rem auto' }}>
+            <SearchFeature 
+                refreshFunction={updateSearchTerm}
+            />
+
+            </div>
+        
             
             {/*cards*/}
 
