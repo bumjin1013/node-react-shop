@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { User } = require("../models/User");
 const { auth } = require("../middleware/auth");
+const { Product } = require('../models/Product');
 
 //=================================
 //             User
@@ -17,6 +18,8 @@ router.get("/auth", auth, (req, res) => {
         lastname: req.user.lastname,
         role: req.user.role,
         image: req.user.image,
+        cart: req.user.cart,
+        history: req.user.history
     });
 });
 
@@ -68,36 +71,38 @@ router.get("/logout", auth, (req, res) => {
 });
 
 router.post("/addToCart", auth, (req, res) => {
-   
-    //먼저 User Collection에 해당 유저의 정보를 가져오기
 
-    User.findOne({ _id: req.user._id }),
+    //먼저  User Collection에 해당 유저의 정보를 가져오기 
+    User.findOne({ _id: req.user._id },
         (err, userInfo) => {
 
-        //가져온 정보에서 카트에다 넣으려 하는 상품이 이미 들어 있는지 확인.
+            // 가져온 정보에서 카트에다 넣으려 하는 상품이 이미 들어 있는지 확인 
+
+            let duplicate = false;
             userInfo.cart.forEach((item) => {
-                if(item.id === req.body.productId ){
+                if (item.id === req.body.productId) {
                     duplicate = true;
                 }
             })
-            //상품이 이미 있을 때
-            if(duplicate) {
+
+            //상품이 이미 있을때
+            if (duplicate) {
                 User.findOneAndUpdate(
-                    { _id: req.user._id, "cart.id" :req.body.productId },
-                    { $inc: {"cart.&.quantity": 1 }},
-                    { new: true}, //update된 정보의 결과값을 받으려면 new: true 라는 옵션이 필요
+                    { _id: req.user._id, "cart.id": req.body.productId },
+                    { $inc: { "cart.$.quantity": 1 } },
+                    { new: true },
                     (err, userInfo) => {
-                        if(err) return res.ststua(400).json({ success: false, err })
+                        if (err) return res.status(200).json({ success: false, err })
                         res.status(200).send(userInfo.cart)
                     }
-                    
                 )
-            //상품이 있지 않을 때
-            } else {
+            }
+            //상품이 이미 있지 않을때 
+            else {
                 User.findOneAndUpdate(
-                    { _id: req.user._id,},
+                    { _id: req.user._id },
                     {
-                        $push:{
+                        $push: {
                             cart: {
                                 id: req.body.productId,
                                 quantity: 1,
@@ -105,14 +110,45 @@ router.post("/addToCart", auth, (req, res) => {
                             }
                         }
                     },
-                    { new: true},
+                    { new: true },
                     (err, userInfo) => {
-                        if(err) return res.ststua(400).json({ success: false, err })
+                        if (err) return res.status(400).json({ success: false, err })
                         res.status(200).send(userInfo.cart)
                     }
                 )
             }
-        }
+        })
 });
+
+router.get('/removeFromCart', auth, (req, res) => {
+
+    //먼저 cart안에 내가 지우려고 한 상품을 지워주기 
+    User.findOneAndUpdate(
+        { _id: req.user._id },
+        {
+            "$pull":
+                { "cart": { "id": req.query.id } }
+        },
+        { new: true },
+        (err, userInfo) => {
+            let cart = userInfo.cart;
+            let array = cart.map(item => {
+                return item.id
+            })
+
+            //product collection에서  현재 남아있는 상품들의 정보를 가져오기 
+
+            //productIds = ['5e8961794be6d81ce2b94752', '5e8960d721e2ca1cb3e30de4'] 이런식으로 바꿔주기
+            Product.find({ _id: { $in: array } })
+                .populate('writer')
+                .exec((err, productInfo) => {
+                    return res.status(200).json({
+                        productInfo,
+                        cart
+                    })
+                })
+        }
+    )
+})
 
 module.exports = router;
