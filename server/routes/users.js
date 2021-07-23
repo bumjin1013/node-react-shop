@@ -3,6 +3,7 @@ const router = express.Router();
 const { User } = require("../models/User");
 const { auth } = require("../middleware/auth");
 const { Product } = require('../models/Product');
+const { Payment } = rerquire('../models/Payment');
 
 //=================================
 //             User
@@ -150,5 +151,53 @@ router.get('/removeFromCart', auth, (req, res) => {
         }
     )
 })
+
+router.post('/successBuy', auth, (req, res) => {
+    
+    //1. User Collection 안에 History 필드 안에 간단한 정보 넣어주기
+    let history = [];
+    let transactionData = {};
+
+    req.body.cartDetail.forEach((item) => {
+        history.push({
+            dataOfPurchase: Date.now(),
+            name: item.title,
+            id: item._id,
+            price: item.price,
+            quantity: item.quantity,
+            paymentId: req.body.paymentData.paymentId
+
+        })
+    })
+
+    //2. Payment Collection 안에 자세한 결제 정보들 넣어주기
+    transactionData.user = {
+        id: req.user._id,
+        name: req.user.name,
+        email: req.user.email,
+    }
+
+    transactionData.data = req.body.paymentData
+
+    transactionData.product = history
+
+    //histroy 정보 저장
+    User.findOneAndUpdate(
+        { _id: req.user._id},
+        { $push: { history: history }, $set: { cart:[] } },
+        { new: true },
+        (err, user) => {
+            if(err) return res.json({ success: false, err })
+                
+            const payment = new Payment(transactionData)
+            payment.save((err, doc) => {
+                if(err) return res.json({ success: false, err })
+
+                 //3. Product Collection 안에 있는 sold 필드 정보 업데이트 시켜주기
+            })
+        }  
+    )
+})
+
 
 module.exports = router;
