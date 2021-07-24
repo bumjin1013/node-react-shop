@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { getCartItems, removeCartItem, onSuccessBuy } from '../../../_actions/user_actions';
 import UserCardBlock from './Sections/UserCardBlock';
-import { Empty } from 'antd';
+import { Empty, Result } from 'antd';
 import Paypal from '../../utils/Paypal';
 function CartPage(props) {
 
@@ -10,6 +10,7 @@ function CartPage(props) {
 
     const [Total, setTotal] = useState(0);
     const [ShowTotal, setShowTotal] = useState(false);
+    const [ShowSuccess, setShowSuccess] = useState(false);
 
     useEffect(() => {
 
@@ -59,6 +60,7 @@ function CartPage(props) {
         .then(response => {
             if(response.payload.success) {
                 setShowTotal(false)
+                setShowSuccess(true)
             }
         })
     }
@@ -72,6 +74,7 @@ function CartPage(props) {
             </div>
 
 
+          
 
             {ShowTotal ?
                 <div style={{ marginTop: '3rem' }}>
@@ -82,10 +85,15 @@ function CartPage(props) {
                         onSuccess={transactionSuccess}
                     />
                 </div>
+                : ShowSuccess?
+                    <Result
+                        status="success"
+                        title="Successfully Purchased Cloud Server ECS!"
+                    />
                 :
                 <>
-                <br/>
-                <Empty description={false} />
+                    <br/>
+                    <Empty description={false} />
                 </>
                 }
                 
