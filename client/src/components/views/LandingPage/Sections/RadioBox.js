@@ -12,7 +12,6 @@ function RadioBox(props) {
     const renderRadioBox = () => (
         props.list && props.list.map(value => (
             <Radio key={value._id} value={value._id}> {value.name} </Radio>
-
         ))
     )
 
@@ -20,13 +19,16 @@ function RadioBox(props) {
         setValue(event.target.value)
         props.handleFilters(event.target.value)
     }
+
     return (
         <div>
-             <Collapse defaultActiveKey={['0']} >
+            <Collapse defaultActiveKey={['0']} >
                 <Panel header="Price" key="1">
+
                     <Radio.Group onChange={handleChange} value={Value}>
                         {renderRadioBox()}
                     </Radio.Group>
+
                 </Panel>
             </Collapse>
         </div>

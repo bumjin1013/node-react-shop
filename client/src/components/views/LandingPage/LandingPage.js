@@ -17,11 +17,10 @@ function LandingPage() {
     const [Limit, setLimit] = useState(8)
     const [PostSize, setPostSize] = useState(0)
     const [Filters, setFilters] = useState({
-        continents:[],
+        continents: [],
         price: []
     })
     const [SearchTerm, setSearchTerm] = useState("")
-
 
     useEffect(() => {
 
@@ -30,55 +29,49 @@ function LandingPage() {
             limit: Limit
         }
 
-        axios.post('/api/product/products', body)
-            .then(response => {
-                if(response.data.success) {
-                    if(body.loadMore) {
-                        setProducts([...Products, ...response.data.Products])
-                    }   else {
-                        setProducts(response.data.productInfo)
-                    }
-                    setPostSize(response.data.postSize)
-                    
-                } else {
-                    alert(" 상품들을 가져오는데 실패하였습니다.");
-                }
-            })
+        getProducts(body)
+
     }, [])
 
     const getProducts = (body) => {
         axios.post('/api/product/products', body)
             .then(response => {
-                if(response.data.success) {
-                    console.log(response.data);
-                    setProducts(response.data.productInfo)
+                if (response.data.success) {
+                    if (body.loadMore) {
+                        setProducts([...Products, ...response.data.productInfo])
+                    } else {
+                        setProducts(response.data.productInfo)
+                    }
+                    setPostSize(response.data.postSize)
                 } else {
-                    alert(" 상품들을 가져오는데 실패하였습니다.");
+                    alert(" 상품들을 가져오는데 실패 했습니다.")
                 }
             })
     }
 
-    const loadMoreHandler = () => {
+
+
+
+    const loadMoreHanlder = () => {
 
         let skip = Skip + Limit
-
         let body = {
-            skip: Skip,
+            skip: skip,
             limit: Limit,
-            loadMore: true
+            loadMore: true,
+            filters: Filters
         }
 
         getProducts(body)
-
         setSkip(skip)
-
     }
+
 
     const renderCards = Products.map((product, index) => {
 
         return <Col lg={6} md={8} xs={24} key={index}>
             <Card
-                cover={<a href={`/product/${product._id}`} ><ImageSlider images={product.images}/></a>}
+                cover={<a href={`/product/${product._id}`} ><ImageSlider images={product.images} /></a>}
             >
                 <Meta
                     title={product.title}
@@ -89,7 +82,7 @@ function LandingPage() {
     })
 
     const showFilteredResults = (filters) => {
-        
+
         let body = {
             skip: 0,
             limit: Limit,
@@ -101,95 +94,100 @@ function LandingPage() {
 
     }
 
+
     const handlePrice = (value) => {
         const data = price;
         let array = [];
 
-        for (let key in data){
-
-            if(data[key]._id === parseInt(value._id, 10)){
+        for (let key in data) {
+            if (data[key]._id === parseInt(value, 10)) {
                 array = data[key].array;
             }
         }
+        return array;
     }
 
     const handleFilters = (filters, category) => {
 
-        const newFilters = {...Filters}
+        const newFilters = { ...Filters }
 
         newFilters[category] = filters
 
-        showFilteredResults()
+        console.log('filters', filters)
 
-        if(category === "price") {
+        if (category === "price") {
             let priceValues = handlePrice(filters)
             newFilters[category] = priceValues
         }
-
         showFilteredResults(newFilters)
-        setFilters()
+        setFilters(newFilters)
     }
 
     const updateSearchTerm = (newSearchTerm) => {
-       
-        let body={
+
+        let body = {
             skip: 0,
             limit: Limit,
             filters: Filters,
             searchTerm: newSearchTerm
         }
-        
+
         setSkip(0)
         setSearchTerm(newSearchTerm)
         getProducts(body)
 
     }
 
+
+
     return (
         <div style={{ width: '75%', margin: '3rem auto' }}>
 
-        <div style={{ textAlign: 'center' }}>
-            <h2>Let's Travel Anywhere <Icon type="rocket" /> </h2>
-        </div>
-
-        {/* Filter */}
-
-        <Row gutter={[16, 16]}>
-            <Col lg={12} xs={24}>
-                {/* CheckBox */}
-                <Checkbox list={continents} handleFilters={filters => handleFilters(filters, "continents")} />
-            </Col>
-            <Col lg={12} xs={24}>
-                {/* RadioBox */}
-                <Radiobox list={price} handleFilters={filters => handleFilters(filters, "price")} />
-            </Col>
-        </Row>
-
-
-
-            {/* serach */}
-            <div style={{ display: 'flex', justifyContent:'flex-end', margin: '1rem auto' }}>
-            <SearchFeature 
-                refreshFunction={updateSearchTerm}
-            />
-
+            <div style={{ textAlign: 'center' }}>
+                <h2>Let's Travel Anywhere <Icon type="rocket" /> </h2>
             </div>
-        
-            
-            {/*cards*/}
 
-        <Row gutter={[16, 16]}>
-           {renderCards}
-        </Row>
-            
+            {/* Filter */}
 
-        {PostSize >= Limit && 
-           <div style={{ justifyContent: 'center' }}>
-               <button onClick={loadMoreHandler}>더보기</button>
-           </div>
-        }
+            <Row gutter={[16, 16]}>
+                <Col lg={12} xs={24}>
+                    {/* CheckBox */}
+                    <Checkbox list={continents} handleFilters={filters => handleFilters(filters, "continents")} />
+                </Col>
+                <Col lg={12} xs={24}>
+                    {/* RadioBox */}
+                    <Radiobox list={price} handleFilters={filters => handleFilters(filters, "price")} />
+                </Col>
+            </Row>
 
-       </div>
+
+
+
+
+            {/* Search */}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '1rem auto' }}>
+                <SearchFeature
+                    refreshFunction={updateSearchTerm}
+                />
+            </div>
+
+            {/* Cards */}
+
+
+            <Row gutter={[16, 16]} >
+                {renderCards}
+            </Row>
+
+            <br />
+
+            {PostSize >= Limit &&
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    <button onClick={loadMoreHanlder}>더보기</button>
+                </div>
+            }
+
+        </div>
     )
 }
 
